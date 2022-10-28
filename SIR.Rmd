@@ -1,9 +1,11 @@
 ---
-title: "Untitled"
+title: "Risk Model"
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
-    vertical_layout: fill
+    social: menu
+    source_code: embed
+runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
@@ -13,6 +15,18 @@ library(dplyr)
 library(deSolve)
 library(ggplot2)
 library(hrbrthemes)
+```
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+selectInput(inputId = "quanta",label = "Quanta per hour",choices = c("SARS","Measels"),selected = "SARS")
+    
+    
+numericInput('ach', 'Air changes per hour', 1,
+              min = 1, max = 10)
+
+sliderInput(inputId = "quanta",label = "Quanta per hour:", min = 1, max = 50,value=10,step=10)
 ```
 
 Column {data-width=650}
@@ -47,7 +61,7 @@ out <- ode(y = init, times = times, func = sir, parms = parameters)
 ## change to data frame
 out <- as.data.frame(out)
 
-plot(out)
+
 ```
 
 Column {data-width=350}
@@ -56,7 +70,11 @@ Column {data-width=350}
 ### Chart B
 
 ```{r}
-
+renderPlot({
+  plot(out())
+}
+  
+       )
 ```
 
 ### Chart C
