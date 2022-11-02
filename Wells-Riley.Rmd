@@ -16,8 +16,8 @@ library(dplyr)
 library(ggplot2)
 library(ggpubr)
 library(devtools)
-require(plotly)
-require(shinyWidgets)
+library(plotly)
+library(shinyWidgets)
 devtools::install_github("joelkuiper/personograph")
 library(personograph)
 ```
@@ -27,51 +27,53 @@ Column {.sidebar}
 
 <!-- 1. Select a input parameters:  -->
   
-Use the <b>drop-down menu</b> and <b>sliders </b> to investigate parameter combinations. 
+Use the <b>drop-down menu</b> and <b>sliders </b> to investigate parameter combinations. We assume 1 person is infected.
 ```{r}
-selectInput(inputId = "C",label = "Type of Infection:",choices = c("SARS-2","Measels","Tuberculosis"),selected = "SARS-2")
+
+selectInput("q", label = h4("Infection of Interest:"), 
+    choices = list("SARS-2" = 25, "Measels" = 400, "Tuberculosis" = 13), 
+    selected = 25)
     
-    
-# numericInput('p', 'Pulmonary breathing rate [m^3/h]', 1, min = 1, max = 10)
+selectInput("V", label = h4("Type of Room:"), 
+    choices = list("Small Meeting Room (4 occupants)" = 3*3*3, 
+                   "Hot-desking office (10 occupants)" = 4*4*4,
+                   "Lecture theatre (80 occupants)" = 10*10*3.5
+                  ), 
+    selected =3*3*3)
 
-sliderInput("S", label = "Number of People in Room (-):",
-            min = 10, max = 200, value = 50, step = 5)
-# 
-sliderInput("I", label = "Number of Infectors (-):",
-            min = 1, max = 3, value = 1, step = 1)
+selectInput("fresh_flow", label = h4("How is the room ventilated:"), 
+    choices = list("Windows Open a Crack" = 2.5, 
+                   "Mechanical Ventilation" = 6,
+                   "Open Door and Open Windows" = 8,
+                   "Air conditioning unit" = 0.2,
+                   "No Appreciable Ventilation" = 0.1), 
+    selected = 2.5)
 
 
-# sliderInput(inputId = "beta",label = "Rate of tranmission (beta):",
-#             min = 0, max = 3,value=2.2,step=0.2)
-# 
-# sliderInput(inputId = "gamma",label = "Rate of recovery (gamma):",
-#             min = 0, max = 3,value=1,step=0.2)
+# sliderInput("S", label = h4("Number of People in Room (-):"),
+#             min = 10, max = 200, value = 50, step = 5)
+ 
+# sliderInput("I", label = h4("Number of Infectors (-):"),
+#             min = 1, max = 3, value = 1, step = 1)
 
-sliderInput(inputId = "tmax",label = "Time to plot [hrs]:",
+
+sliderInput(inputId = "tmax",label = h4("How long is the Room Occupied [hrs]:"),
             min = 1, max = 24,value=24,step=1)
 
 
-sliderInput(inputId = "V",label = "Volume of Room (m3):",
-            min = 20*20*3, max = 5*20*20*3,value=2*20*20*3,step=20*20*3/3)
-# 
-sliderInput(inputId = "masking",label = "Percentage of People Masking [%]:",
-            min = 0, max = 100,value=10,step=5)
+# selectInput(inputId = "V",label = "How is your room ventilated:", choices = c("Openable Windows","Mechanical Ventilation","Air conditioning unit","No Appreciable Ventilation"),selected = "No Appreciable Ventilation")
 
-selectInput(inputId = "V",label = "How is your room ventilated:", choices = c("Openable Windows","Mechanical Ventilation","Air conditioning unit","No Appreciable Ventilation"),selected = "No Appreciable Ventilation")
 shinyWidgets::sliderTextInput(inputId = "maskProp",
-                              label = h4("Percentage % of people wearing masks:"),
+                              label = h4("Percentage of people wearing masks [%]:"),
                               grid = TRUE,
                               force_edges = TRUE,
-                              choices = c(0,75,90,100))
+                              choices = c(0,10,20,30,40,50,60,70,80,90,100))
 
-selectInput("fresh_flow", label = h4("Fresh airflow rate [ACh] :"), 
-    choices = list("1 ACh" = 1, "4 ACh" = 4, "13 ACh" = 13," 40 ACh" = 40,"127 ACh" = 127), 
-    selected = 127)
 
-selectizeInput("dropExhale", label = h4("Expert setting: Modelling engine choice "),
-               choices= list(`Coughing` = list("BLO coughing" = "2", "Duguid" = "4", "L&R" = "5"),
-                             `Speaking` = list("BLO speaking" = "3"),
-                             `Breathing` = list("BLO breathing" = "1")))
+# selectizeInput("dropExhale", label = h4("Expert setting: Modelling engine choice "),
+#                choices= list(`Coughing` = list("BLO coughing" = "2", "Duguid" = "4", "L&R" = "5"),
+#                              `Speaking` = list("BLO speaking" = "3"),
+#                              `Breathing` = list("BLO breathing" = "1")))
 ```
 
 <!-- si la persona infectada lleva mascarilla entonces el 0.5 aplica a q, no a p -->
@@ -81,8 +83,14 @@ selectizeInput("dropExhale", label = h4("Expert setting: Modelling engine choice
 Column {data-width=650}
 -----------------------------------------------------------------------
 
+<!-- ### How to use this dashboard: -->
 
-### Airborne Concentration
+<!-- This dashboard tool is intended as a way of evaluating current exposure from airborne infectionn in an indoor space.  -->
+
+<!-- * **Airborne Risk**:  Evaluate the risk of infection from an airborne microorganism by using the sliders and drop-down menus select the type of room, type of ventilation and number of occupants. -->
+<!-- * **Mitigation Strategies**: you can control the risk by investigating "what-if" scenarios, including what happens if 50% of the participatns are masked versus if you can open a window. -->
+
+### Airborne Risk
 
 ```{r Concentration, echo=FALSE,warning=FALSE}
 # C <- function(tmax,lambdaV,lambdaD,lambdaR,q,V){
@@ -93,53 +101,70 @@ Column {data-width=650}
 #   
 # }
 
-#TODO is the infectious person wearing a mask?
-#TODO what is the filtration efficiency?
-# TODO change Volume of room to 10 perso Meeting room or 120 person Lecture Room
+# FIXME multiplicas por p (pulmonary rate), osea que si consideras 0.5p lo que dices es que esa persona respira el 50%
+# FIXME porque el otro 50% que respira esta limpio y no hace falta considerarlo)
+# FIXME osea que creo que tiene sentido considerar
+# FIXME N_E = S_1(1-exp{...p}) + S_2(1-exp{...0.5p})
+# FIXME donde S_1 es el numero de susceptibles sin mascarilla y S_2 con mascarilla
+
+S <- reactive(
+  {
+    if(input$V==3*3*3) {
+      s=4
+    } else if(input$V==4*4*4) {
+      s=10
+    } else {
+      s=80
+    }
+    return(s)
+  }
+)
+
 
 N1 <- function(p,q,Q,t,S,I){
   return(S*(1-exp(-p*I*q/Q*t)))
 }
 
-# N2 <- function(p,q,Q,t,S,I){
-#   return(S*(1-exp(-p*I*q/Q*t)))
-# }
-# plot(seq(0,10,0.1),C(10,0.1,0.01,0.4,60))
+WR<-reactive({
 
-WR<-reactive({#tmax,lambdaV,lambdaD,lambdaR,q,V
-  if (input$V=="Openable Windows"){
-  V=100
-  }else if (input$V=="Mechanical Ventilation"){
-  V=200
-  }else if ("Air conditioning unit"){
-  V=0.1
-  } else {
-  V=0.01
-  }
   
   df <- data.frame(
     time=seq(0,input$tmax,0.1),
-    standard=N1(0.6,25,44*1,seq(0,input$tmax,0.1),input$S,input$I),
-    extra_ventilation=N1(0.6,25,55*2,seq(0,input$tmax,0.1),input$S,input$I)
+    standard=N1(0.6,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V),seq(0,input$tmax,0.1),S(),1),
+    masked=N1(0.6,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V),seq(0,input$tmax,0.1),S()*(1-as.numeric(input$maskProp)/100),1)+N1(0.6*0.5,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V),seq(0,input$tmax,0.1),S()*(as.numeric(input$maskProp)/100),1),
+    extra_ventilation=N1(0.6,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V)*1.2,seq(0,input$tmax,0.1),S,1)
     
   )
 })
 
 renderPlotly({
-ggplotly(
- #purrr::map(.x = 1:as.integer(50),myfun) %>%
-  ggplot(data=WR()%>% filter(time<input$tmax) )+ #
-  geom_line(aes(x=time,y=standard),colour="red")+
-  geom_line(aes(x=time,y=extra_ventilation),colour="green")+
-  # geom_line(aes(x=time,y=I),colour="blue")+
-  # geom_line(aes(x=time,y=R),colour="black")+
-  # annotate("text", x = 24, y = 0.5, label = paste("beta=", input$beta,",","R0=",(input$beta)*input$delta/(input$gamma+input$delta)/input$delta))+
-  ylab("Number of Infected People")+
-  xlab("Time[hours]")+
-  # scale_y_continuous(limits=c(0,1))+
-  ggpubr::theme_pubr(base_size = 14)+
-  theme(legend.position="top")
-)
+  plot_ly(WR(), x=~time, y=~standard,
+        name='No Mitigation',  hoverinfo = 'text',
+        text = ~paste('Number infected: ', round(WR()$standard)),
+        type = 'scatter', mode = 'plines') %>%
+  add_trace(x=~time, y = ~extra_ventilation, name='Increased ventilation', mode = 'plines',
+            text = ~paste('Number infected: ', round(WR()$extra_ventilation))) %>%
+  add_trace(x=~time, y = ~masked, name='Masking', mode = 'plines',
+            text = ~paste('Number infected: ', round(WR()$masked))) %>%
+  layout(yaxis = list(title = 'Number infected'), 
+         # xaxis = list(title = 'Time (hours)')
+             xaxis = list(
+      rangeslider = list(type = "time"))) # ,legend = list(x = 50, y = 2)
+  
+# ggplotly(
+#  #purrr::map(.x = 1:as.integer(50),myfun) %>%
+#   ggplot(data=WR()%>% filter(time<input$tmax) )+ #
+#   geom_line(aes(x=time,y=standard),colour="red")+
+#   geom_line(aes(x=time,y=extra_ventilation),colour="green")+
+#   # geom_line(aes(x=time,y=I),colour="blue")+
+#   # geom_line(aes(x=time,y=R),colour="black")+
+#   # annotate("text", x = 24, y = 0.5, label = paste("beta=", input$beta,",","R0=",(input$beta)*input$delta/(input$gamma+input$delta)/input$delta))+
+#   ylab("Number of Infected People")+
+#   xlab("Time[hours]")+
+#   # scale_y_continuous(limits=c(0,1))+
+#   ggpubr::theme_pubr(base_size = 14)+
+#   theme(legend.position="top")
+# )
 })
 ```
 
@@ -154,46 +179,61 @@ ggplotly(
 
 ```
 
-<!-- #### Number of Infected -->
+### Number of Infected
 
-<!-- ```{r personograph, echo=FALSE,warning=FALSE} -->
+```{r personograph, echo=FALSE,warning=FALSE}
 
-<!-- w <- reactive({ -->
-<!--     a<-res() %>% -->
-<!--       filter(name=="C1")%>% #Choose any patient otherwise you're triplicating the subsequent calculations -->
-<!--       select(risk) %>% -->
-<!--       mutate(NumInfected = list(rbinom(n=100, size = 100, prob = risk))) -->
+w <- reactive({
+    a<-WR() %>%
+      rename("risk"="standard") %>% 
+      # filter(name=="C1")%>% #Choose any patient otherwise you're triplicating the subsequent calculations
+      select(risk) %>%
+      slice_tail(n=1) %>% 
+      mutate(NumInfected = list(rbinom(n=100, size = 100, prob = S-risk)))
 
-<!--     #Calculate mean and sd of all values in the nested lists -->
-<!--     ms <- function(a, col="NumInfected") { -->
-<!--       u <- unlist(a[[col]]) -->
-<!--       return(data.frame(Mean=ceiling(mean(u)),SD=ceiling(sd(u)))) -->
-<!--     } -->
+    #Calculate mean and sd of all values in the nested lists
+    ms <- function(a, col="NumInfected") {
+      u <- unlist(a[[col]])
+      return(data.frame(Mean=ceiling(mean(u)),SD=ceiling(sd(u))))
+    }
 
-<!--     a<-ms(a) -->
+    a<-ms(a)
 
-<!--     z<-rbind(a,c(100-a$Mean,100-a$SD)) -->
-<!--     z<-z/100 -->
-<!--     z$Infected <-  as.factor(c("Infected", "Uninfected")) -->
-<!--     data<-list(Infected=z$Mean[1], Possibly=z$SD[1],Uninfected=1-(z$Mean[1]+z$SD[1]) ) -->
-<!--     return(data) -->
-<!--   }) -->
+    z<-rbind(a,c(100-a$Mean,100-a$SD))
+    z<-z/100
+    z$Infected <-  as.factor(c("Infected", "Uninfected"))
+    data<-list(Infected=z$Mean[1], Possibly=z$SD[1],Uninfected=1-(z$Mean[1]+z$SD[1]) )
+    return(data)
+  })
 
-<!-- renderPlot({ -->
+renderPlot({
 
-<!--     wafflePlot<- -->
-<!--       w() %>% -->
-<!--       personograph(  -->
-<!--         n.icons=100,  -->
-<!--         dimensions=c(10,10),  -->
+    wafflePlot<-
+      w() %>%
+      personograph(
+        n.icons=S,
+        dimensions=c(S/2,10),
+        plot.width=0.8,
+        icon.style=2,
+        colors=list(Uninfected="grey", Infected="blue",Possibly="orange"),
+        force.fill = TRUE,
+        fig.cap = "Number of additional infected occupants per 100 (mean=blue, SD=orange)"
+      )
+
+    wafflePlot
+  })
+```
+
+<!-- ```{r} -->
+<!-- list(Infected=0.5, Possibly=0.1,Uninfected=1-(0.5+0.1))%>%  -->
+<!-- personograph( -->
+<!--         n.icons=50, -->
+<!--         dimensions=c(5,10), -->
 <!--         plot.width=0.8, -->
 <!--         icon.style=2, -->
 <!--         colors=list(Uninfected="grey", Infected="blue",Possibly="orange"), -->
 <!--         force.fill = TRUE, -->
-<!--         fig.cap = "Number of additional infected patients per 100 (mean=blue, SD=orange)" -->
+<!--         fig.cap = "Number of additional infected occupants per 100 (mean=blue, SD=orange)" -->
 <!--       ) -->
-
-<!--     wafflePlot -->
-<!--   }) -->
 <!-- ``` -->
 
