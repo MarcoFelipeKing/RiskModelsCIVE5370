@@ -1,5 +1,5 @@
 ---
-title: "Risk Model"
+title: "CIVE 5370 Indoor and Urban Air Quality: Risk Modelling"
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
@@ -14,27 +14,50 @@ library(shiny)
 library(dplyr)
 library(deSolve)
 library(ggplot2)
-library(hrbrthemes)
+library(ggpubr)
+library(plotly)
 ```
 Column {.sidebar}
 -----------------------------------------------------------------------
-
+<!-- 1. Select a input parameters:  -->
+  
+Use the <b>drop-down menu</b> and <b>sliders </b> to investigate parameter combinations. 
 ```{r}
-selectInput(inputId = "quanta",label = "Quanta per hour",choices = c("SARS","Measels"),selected = "SARS")
+# selectInput(inputId = "quanta",label = "Quanta per hour",choices = c("SARS","Measels"),selected = "SARS")
     
     
-numericInput('ach', 'Air changes per hour', 1,
-              min = 1, max = 10)
+# numericInput('p', 'Pulmonary breathing rate [m^3/h]', 1, min = 1, max = 10)
 
-sliderInput(inputId = "quanta",label = "Quanta per hour:", min = 1, max = 50,value=10,step=10)
+sliderInput("S", label = "Number of Susceptibles (-):",
+            min = 30, max = 300, value = 100, step = 10)
+# 
+sliderInput("I", label = "Number of Infectors (-):",
+            min = 1, max = 3, value = 1, step = 1)
+
+
+sliderInput(inputId = "beta",label = "Rate of tranmission (beta):",
+            min = 0, max = 3,value=2.2,step=0.2)
+
+sliderInput(inputId = "gamma",label = "Rate of recovery (gamma):",
+            min = 0, max = 3,value=1,step=0.2)
+
+sliderInput(inputId = "tmax",label = "Time to plot [hrs]:",
+            min = 1, max = 100,value=100,step=5)
+
+
+# sliderInput(inputId = "quanta",label = "Quanta per hour:",
+#             min = 1, max = 200,value=50,step=5)
+# 
+# sliderInput(inputId = "Q",label = "Fresh air flow rate [m^3/h]:",
+#             min = 1, max = 10,value=2,step=1)
+sliderInput(inputId = "delta",label = "Rate of incubation (alpha):",
+            min = 0, max = 3,value=1,step=0.2)
+
 ```
 
-Column {data-width=650}
------------------------------------------------------------------------
-
-### Chart A
 
 ```{r}
+
 ## Create an SIR function
 sir <- function(time, state, parameters) {
 
@@ -48,38 +71,111 @@ sir <- function(time, state, parameters) {
   })
 }
 
-### Set parameters
+
+SIR<-reactive({
+  ### Set parameters
 ## Proportion in each compartment: Susceptible 0.999999, Infected 0.000001, Recovered 0
-init       <- c(S = 1-1e-6, I = 1e-6, R = 0.0)
+init       <- c(S = 1-input$I/(input$S-input$I), I =input$I/(input$S-input$I), R = 0.0)#1-1e-6 
 ## beta: infection parameter; gamma: recovery parameter
-parameters <- c(beta = 1.4247, gamma = 0.14286)
+parameters <- c(beta = input$beta , gamma =input$gamma) #1.4247  0.14286
 ## Time frame
-times      <- seq(0, 70, by = 1)
+times      <- seq(0, 100, by = 0.1)
 
 ## Solve using ode (General Solver for Ordinary Differential Equations)
 out <- ode(y = init, times = times, func = sir, parms = parameters)
 ## change to data frame
 out <- as.data.frame(out)
-
+return(out)
+})
 
 ```
 
-Column {data-width=350}
------------------------------------------------------------------------
+```{r SEIR}
+## Creates the SEIR function
 
-### Chart B
+seir <- function(time, state, parameters) {
 
-```{r}
-renderPlot({
-  plot(out())
+  with(as.list(c(state, parameters)), {
+
+    dS <- -beta * S * I
+    dE <-  beta*S*I - delta*E
+    dI <-  delta*E - gamma * I
+    dR <-                 gamma * I
+
+    return(list(c(dS, dE, dI, dR)))
+  })
 }
-  
-       )
+
+
+SEIR<-reactive({
+  ### Set parameters
+## Proportion in each compartment: Susceptible 0.999999, Infected 0.000001, Recovered 0
+init       <- c(S = 1-input$I/(input$S-input$I), E=0.0, I =input$I/(input$S-input$I), R = 0.0)#1-1e-6 
+## beta: infection parameter; gamma: recovery parameter
+parameters <- c(beta = input$beta, delta=input$delta, gamma = input$gamma)
+## Time frame
+times      <- seq(0, 100, by = 0.1)
+
+## Solve using ode (General Solver for Ordinary Differential Equations)
+out <- ode(y = init, times = times, func = seir, parms = parameters,method = "radau")
+## change to data frame
+out <- as.data.frame(out)
+return(out)
+})
+
 ```
 
-### Chart C
+ Row {.tabset .tabset-fade}
+-------------------------------------  
+
+### SIR Model
+<!-- #0.6*input$quanta/input$Q -->
+<!-- R0=(0.6*input$quanta/input$Q)/input$gamma) -->
+```{r}
+renderPlotly({
+  ggplotly(
+    # renderPlot({
+
+ #purrr::map(.x = 1:as.integer(50),myfun) %>% 
+  ggplot(data=SIR() %>% filter(time<input$tmax))+
+  geom_line(aes(x=time,y=S),colour="red")+
+  geom_line(aes(x=time,y=I),colour="blue")+
+  geom_line(aes(x=time,y=R),colour="black")+
+  annotate("text", x = 24, y = 0.5, label = paste("beta=", input$beta,",","R0=",input$beta/input$gamma))+
+  ylab("Proportion of population")+
+  xlab("Time[hours]")+
+  scale_y_continuous(limits=c(0,1))+
+  ggpubr::theme_pubr(base_size = 14)+
+  theme(legend.position="top")
+  )
+})
+```
+
+ 
+
+
+### SEIR Model
 
 ```{r}
+#Repdoruction number: https://web.stanford.edu/~jhj1/teachingdocs/Jones-on-R0.pdf
+#https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6002118/
+renderPlotly({
+ggplotly(
+ #purrr::map(.x = 1:as.integer(50),myfun) %>%
+  ggplot(data=SEIR()%>% filter(time<input$tmax) )+ #
+  geom_line(aes(x=time,y=S),colour="red")+
+  geom_line(aes(x=time,y=E),colour="green")+
+  geom_line(aes(x=time,y=I),colour="blue")+
+  geom_line(aes(x=time,y=R),colour="black")+
+  annotate("text", x = 24, y = 0.5, label = paste("beta=", input$beta,",","R0=",(input$beta)*input$delta/(input$gamma+input$delta)/input$delta))+
+  ylab("Proportion of population")+
+  xlab("Time[hours]")+
+  scale_y_continuous(limits=c(0,1))+
+  ggpubr::theme_pubr(base_size = 14)+
+  theme(legend.position="top")
+)
+})
 
+# beta*sigma<(gamma+mu)*(sigma+mu)
 ```
 

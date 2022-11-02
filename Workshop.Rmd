@@ -1,0 +1,96 @@
+---
+title: "Airborne Risk Modelling Workshop"
+author: "Marco-Felipe King"
+# date: '2022-11-01'
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# install.packages("pacman")
+pacman::p_load(shiny, deSolve,dplyr,tidyr,ggplot2,ggpubr,plotly)
+
+```
+The following document will help you work through some of the concepts we covered earlier about controlling infection and mitigation strategies. Often there are trade-offs or diminishing returns on a strategy. 
+
+## Learning Objectives:
+
+*By the end of the session you will be able to:*
+
+- Evaluate the risk of airborne infection for a variety of microorganisms - Wells-Riley Model
+- Evaluate the relative importance of increasing ventilation, masking or early testing on the number of infections at any one time - SEIR model.
+
+
+
+## 1. Wells-Riley Model
+
+The Wells-Riley equation is a method of exploring the effect of ventilation on infection risk. Recall that the equation for the steady-state model is as follows:
+
+$$N=S\Big(1-\exp(-\dfrac{Ipqt}{Q})\Big)$$,
+
+where $S$ is the number of infectious people, $p$ is the pulmonary breathing rate (m$^3$/h), $q$ is the quanta rate per hour, $I$ is the number of infectious people, $t$ is the time spent in the room (hours) and $Q$ is the ventilation rate in (m$^3$/h).
+
+Use the sliders to explore the effect of each parameter
+
+```{r Wells-Riley Sliders, echo=FALSE, warning=FALSE}
+sliderInput(inputId = "quanta",label = "Quanta per hour:",
+            min = 1, max = 200,value=50,step=5)
+
+numericInput("p", "Pulmonary breathing rate (m3/h):", 1)
+
+sliderInput(inputId = "Q",label = "Fresh air flow rate [m3/h]:",
+            min = 100, max = 10000,value=200,step=200)
+
+sliderInput("S", label = "Number of Susceptibles (-):",
+            min = 30, max = 300, value = 100, step = 10)
+# 
+sliderInput("I", label = "Number of Infectors (-):",
+            min = 1, max = 3, value = 1, step = 1)
+
+sliderInput(inputId = "tmax",label = "Time to plot [hrs]:",
+            min = 1, max = 100,value=100,step=5)
+
+```
+
+```{r Wells-Riley, echo=FALSE, warning=FALSE}
+
+N <- function(p,q,Q,t,S,I){
+  return(S*(1-exp(-p*I*q/Q*t)))
+}
+
+df <- reactive({
+  return(data.frame(
+  t=seq(0,input$tmax,by=0.1),
+  value=N(input$p,input$quanta,input$Q,seq(0,input$tmax,by=0.1),input$S,input$I)
+  # q250_1=N(250,1000,seq(0,8,by=0.1),input$S),
+  # q1_6=N(1,1000,seq(0,8,by=0.1),input$S),
+  # q250_6=N(250,6000,seq(0,8,by=0.1),input$S)
+  ))
+})
+
+
+renderPlotly({
+ggplotly(
+df() %>% 
+  # rename("quanta=1,ach=1"="q1_1",
+  #        "quanta=250,ach=1"="q250_1",
+  #        "quanta=1,ach=6"="q1_6",
+  #        "quanta=250,ach=6"="q250_6",) %>% 
+  # pivot_longer(!t) %>% 
+  ggplot()+
+  # geom_line(aes(x=t,y=value,colour=name))+
+  geom_line(aes(x=t,y=value))+
+  xlab("Time (hours)")+
+  ylab("Number of infected")+
+  scale_color_brewer(palette = "Set1")+
+  # facet_wrap(~name,nrow=4)+
+  hrbrthemes::theme_ipsum()+
+  theme(legend.position = "")  
+)
+})
+
+
+```
+
+## 2. SEIR model
