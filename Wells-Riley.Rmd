@@ -18,7 +18,7 @@ library(ggpubr)
 library(devtools)
 library(plotly)
 library(shinyWidgets)
-devtools::install_github("joelkuiper/personograph")
+# devtools::install_github("joelkuiper/personograph")
 library(personograph)
 ```
 
@@ -27,25 +27,25 @@ Column {.sidebar}
 
 <!-- 1. Select a input parameters:  -->
   
-Use the <b>drop-down menu</b> and <b>sliders </b> to investigate parameter combinations. We assume 1 person is infected.
+Use the <b>drop-down menu</b> and <b>sliders </b> 1 to 4 to predict the risk of infection in a room. Investigate the effect of mitigation strategies by changing the ventilation strategy and masking rates.
 ```{r}
 
-selectInput("q", label = h4("Infection of Interest:"), 
+selectInput("q", label = h4("1. Infection of interest:"), 
     choices = list("SARS-2" = 25, "Measels" = 400, "Tuberculosis" = 13), 
     selected = 25)
     
-selectInput("V", label = h4("Type of Room:"), 
+selectInput("V", label = h4("2. Type of room:"), 
     choices = list("Small Meeting Room (4 occupants)" = 3*3*3, 
                    "Hot-desking office (10 occupants)" = 4*4*4,
                    "Lecture theatre (80 occupants)" = 10*10*3.5
                   ), 
     selected =3*3*3)
 
-selectInput("fresh_flow", label = h4("How is the room ventilated:"), 
-    choices = list("Windows Open a Crack" = 2.5, 
+selectInput("fresh_flow", label = h4("3. How is the room ventilated:"), 
+    choices = list("Window Open a Crack" = 2.5, 
                    "Mechanical Ventilation" = 6,
                    "Open Door and Open Windows" = 8,
-                   "Air conditioning unit" = 0.2,
+                   "Air Conditioning Unit" = 0.2,
                    "No Appreciable Ventilation" = 0.1), 
     selected = 2.5)
 
@@ -57,17 +57,17 @@ selectInput("fresh_flow", label = h4("How is the room ventilated:"),
 #             min = 1, max = 3, value = 1, step = 1)
 
 
-sliderInput(inputId = "tmax",label = h4("How long is the Room Occupied [hrs]:"),
-            min = 1, max = 24,value=24,step=1)
+# sliderInput(inputId = "tmax",label = h4("4. How long is the room cccupied [hrs]:"),
+#             min = 1, max = 24,value=24,step=1)
 
 
 # selectInput(inputId = "V",label = "How is your room ventilated:", choices = c("Openable Windows","Mechanical Ventilation","Air conditioning unit","No Appreciable Ventilation"),selected = "No Appreciable Ventilation")
 
 shinyWidgets::sliderTextInput(inputId = "maskProp",
-                              label = h4("Percentage of people wearing masks [%]:"),
+                              label = h4("4. Percentage of people wearing masks [%]:"),
                               grid = TRUE,
                               force_edges = TRUE,
-                              choices = c(0,10,20,30,40,50,60,70,80,90,100))
+                              choices = c(0,10,20,30,40,50,60,70,80,90,100),selected = 80)
 
 
 # selectizeInput("dropExhale", label = h4("Expert setting: Modelling engine choice "),
@@ -116,7 +116,7 @@ S <- reactive(
     } else {
       s=80
     }
-    return(s)
+    return(data.frame(s=s))
   }
 )
 
@@ -129,23 +129,26 @@ WR<-reactive({
 
   
   df <- data.frame(
-    time=seq(0,input$tmax,0.1),
-    standard=N1(0.6,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V),seq(0,input$tmax,0.1),S(),1),
-    masked=N1(0.6,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V),seq(0,input$tmax,0.1),S()*(1-as.numeric(input$maskProp)/100),1)+N1(0.6*0.5,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V),seq(0,input$tmax,0.1),S()*(as.numeric(input$maskProp)/100),1),
-    extra_ventilation=N1(0.6,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V)*1.2,seq(0,input$tmax,0.1),S,1)
+    time=seq(0,12,0.1),
+    standard=N1(0.6,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V),seq(0,12,0.1),S()$s,1),
+    masked=N1(0.6,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V),seq(0,12,0.1),S()$s*(1-as.numeric(input$maskProp)/100),1)+N1(0.6*0.5,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V),seq(0,12,0.1),S()$s*(as.numeric(input$maskProp)/100),1),
+    extra_ventilation=N1(0.6,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V)*1.2,seq(0,12,0.1),S()$s,1),
+    masked_and_vent=N1(0.6,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V)*1.2,seq(0,12,0.1),S()$s*(1-as.numeric(input$maskProp)/100),1)+N1(0.6*0.5,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V)*1.2,seq(0,12,0.1),S()$s*(as.numeric(input$maskProp)/100),1)
     
   )
 })
 
 renderPlotly({
   plot_ly(WR(), x=~time, y=~standard,
-        name='No Mitigation',  hoverinfo = 'text',
+        name='No mitigation',  hoverinfo = 'text',
         text = ~paste('Number infected: ', round(WR()$standard)),
         type = 'scatter', mode = 'plines') %>%
-  add_trace(x=~time, y = ~extra_ventilation, name='Increased ventilation', mode = 'plines',
-            text = ~paste('Number infected: ', round(WR()$extra_ventilation))) %>%
-  add_trace(x=~time, y = ~masked, name='Masking', mode = 'plines',
-            text = ~paste('Number infected: ', round(WR()$masked))) %>%
+  add_trace(x=~time, y = ~extra_ventilation, name='Opening an extra window only', mode = 'plines',
+            text = ~paste('Increased ventilation by opening an extra window','<br>Number infected: ', round(WR()$extra_ventilation))) %>%
+  add_trace(x=~time, y = ~masked, name='With masking only', mode = 'plines',
+            text = ~paste('Masked %=',input$maskProp,'<br>Number infected: ', round(WR()$masked))) %>%
+    add_trace(x=~time, y = ~masked_and_vent, name='With masking and extra window open', mode = 'plines',
+            text = ~paste('Masked %=',input$maskProp, 'and Increased ventilation by opening an extra window','<br>Number infected: ', round(WR()$masked_and_vent))) %>%
   layout(yaxis = list(title = 'Number infected'), 
          # xaxis = list(title = 'Time (hours)')
              xaxis = list(
@@ -188,8 +191,8 @@ w <- reactive({
       rename("risk"="standard") %>% 
       # filter(name=="C1")%>% #Choose any patient otherwise you're triplicating the subsequent calculations
       select(risk) %>%
-      slice_tail(n=1) %>% 
-      mutate(NumInfected = list(rbinom(n=100, size = 100, prob = S-risk)))
+      slice_tail(n=1) %>% # last number #FIXME doesn't move with slider
+      mutate(NumInfected = list(rbinom(n=100, size = 100, prob = S()$s-risk)))
 
     #Calculate mean and sd of all values in the nested lists
     ms <- function(a, col="NumInfected") {
@@ -202,7 +205,7 @@ w <- reactive({
     z<-rbind(a,c(100-a$Mean,100-a$SD))
     z<-z/100
     z$Infected <-  as.factor(c("Infected", "Uninfected"))
-    data<-list(Infected=z$Mean[1], Possibly=z$SD[1],Uninfected=1-(z$Mean[1]+z$SD[1]) )
+    data<-list(Infected=1-z$Mean[1], Possibly=z$SD[1],Uninfected=(z$Mean[1]+z$SD[1]) )
     return(data)
   })
 
@@ -211,13 +214,13 @@ renderPlot({
     wafflePlot<-
       w() %>%
       personograph(
-        n.icons=S,
-        dimensions=c(S/2,10),
+        n.icons=S()$s,
+        dimensions=c(S()$s,5),
         plot.width=0.8,
         icon.style=2,
         colors=list(Uninfected="grey", Infected="blue",Possibly="orange"),
         force.fill = TRUE,
-        fig.cap = "Number of additional infected occupants per 100 (mean=blue, SD=orange)"
+        fig.cap = "Average number of additional infected occupants (mean=blue, SD=orange)"
       )
 
     wafflePlot
