@@ -36,7 +36,7 @@ selectInput("q", label = h4("1. Infection of interest:"),
     
 selectInput("V", label = h4("2. Type of room:"), 
     choices = list("Small Meeting Room (4 occupants)" = 3*3*3, 
-                   "Hot-desking office (10 occupants)" = 4*4*4,
+                   "Open plan office (10 occupants)" = 4*4*4,
                    "Lecture theatre (80 occupants)" = 10*10*3.5
                   ), 
     selected =3*3*3)
@@ -64,11 +64,16 @@ selectInput("fresh_flow", label = h4("3. How is the room ventilated:"),
 # selectInput(inputId = "V",label = "How is your room ventilated:", choices = c("Openable Windows","Mechanical Ventilation","Air conditioning unit","No Appreciable Ventilation"),selected = "No Appreciable Ventilation")
 
 shinyWidgets::sliderTextInput(inputId = "maskProp",
-                              label = h4("4. Percentage of people wearing masks [%]:"),
+                              label = h4("4. Percentage of people wearing surgical masks [%]:"),
                               grid = TRUE,
                               force_edges = TRUE,
                               choices = c(0,10,20,30,40,50,60,70,80,90,100),selected = 80)
 
+# shinyWidgets::sliderTextInput(inputId = "maskPropFFP",
+#                               label = h4("5. Percentage of people wearing an FFP-3 mask [%]:"),
+#                               grid = TRUE,
+#                               force_edges = TRUE,
+#                               choices = c(0,10,20,30,40,50,60,70,80,90,100),selected = 0)
 
 # selectizeInput("dropExhale", label = h4("Expert setting: Modelling engine choice "),
 #                choices= list(`Coughing` = list("BLO coughing" = "2", "Duguid" = "4", "L&R" = "5"),
