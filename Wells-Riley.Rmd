@@ -50,12 +50,12 @@ selectInput("V", label = h4("2. Type of room:"),
 #     selected = 2.5)
 
 selectInput("fresh_flow", label = h4("3. What is the current CO2 level?:"), 
-    choices = list("1500 ppm" = 2.5, 
-                   "1000 ppm" = 6,
-                   "650 ppm" = 8,
-                   # "Air Conditioning Unit" = 0.2,
-                   "2100 ppm" = 0.1), 
-    selected = 2.5)
+            choices = list(                   "650 ppm" = 8,
+                                              "1000 ppm" = 6,
+                                              "1500 ppm" = 2.5, 
+                                              # "Air Conditioning Unit" = 0.2,
+                                              "2100 ppm" = 0.1), 
+            selected = 2.5)
 
 # sliderInput("S", label = h4("Number of People in Room (-):"),
 #             min = 10, max = 200, value = 50, step = 5)
@@ -140,10 +140,10 @@ S <- reactive(
 N1 <- function(p,q,Q,t,S,I){
   return(S*(1-exp(-p*I*q/Q*t)))
 }
-N1 <- function(q,C,t,S,I){
-  f=(C-500)/37500
-  return(S*(1-exp(-f*I*q*t/(S+I))))
-}
+# N1 <- function(q,C,t,S,I){
+#   f=(C-500)/37500
+#   return(S*(1-exp(-f*I*q*t/(S+I))))
+# }
 
 WR<-reactive({
   
@@ -151,9 +151,12 @@ WR<-reactive({
   df <- data.frame(
     time=seq(0,input$tmax,0.1),
     standard=N1(0.6,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V),seq(0,input$tmax,0.1),S()$s,1),
-    masked=N1(0.6,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V),seq(0,input$tmax,0.1),S()$s*(1-as.numeric(input$maskProp)/100),1)+N1(0.6*0.1,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V),seq(0,input$tmax,0.1),S()$s*(as.numeric(input$maskProp)/100),1),
-    extra_ventilation=N1(0.6,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V)*1.5,seq(0,input$tmax,0.1),S()$s,1),
-    masked_and_vent=N1(0.6,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V)*1.5,seq(0,input$tmax,0.1),S()$s*(1-as.numeric(input$maskProp)/100),1)+N1(0.6*0.1,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V)*1.2,seq(0,input$tmax,0.1),S()$s*(as.numeric(input$maskProp)/100),1)
+    
+    masked=N1(0.6,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V),seq(0,input$tmax,0.1),S()$s*(1-as.numeric(input$maskProp)/100),1)+N1(0.6*0.5,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V),seq(0,input$tmax,0.1),S()$s*(as.numeric(input$maskProp)/100),1),
+    
+    
+    extra_ventilation=N1(0.6,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V)*1.2,seq(0,input$tmax,0.1),S()$s,1),
+    masked_and_vent=N1(0.6,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V)*1.2,seq(0,input$tmax,0.1),S()$s*(1-as.numeric(input$maskProp)/100),1)+N1(0.6*0.5,as.numeric(input$q),as.numeric(input$fresh_flow)*as.numeric(input$V)*1.2,seq(0,input$tmax,0.1),S()$s*(as.numeric(input$maskProp)/100),1)
     
   )
 })
@@ -206,7 +209,7 @@ renderTable(digits=0, {WR() %>% slice_tail(n=1) %>% rename("Time in room(h)"="ti
 Row
 -------------------------------------
 
-### 3.1 % Reduction due to Masking Only
+### 3.1 % Reduction of RISK due to Masking Only - Surgical masks reduces aerosols by 50%
 
 ```{r guage_mask, echo=FALSE,warning=FALSE}
 
@@ -224,7 +227,7 @@ renderGauge({
 
 ```
 
-### 3.2 % Reduction due to Additional Ventilation Only
+### 3.2 % Reduction due to 20% Additional Ventilation Only 
 
 ```{r guage_vent, echo=FALSE,warning=FALSE}
 
@@ -236,7 +239,7 @@ renderGauge({
 })
 ```
 
-### 3.3 % Reduction due to Additional Ventilation and Masking
+### 3.3 % Reduction due to Additional Ventilation and Masking % Chosen in 5.
 
 ```{r guage_mask_vent, echo=FALSE,warning=FALSE}
 
