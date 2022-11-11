@@ -41,14 +41,21 @@ selectInput("V", label = h4("2. Type of room:"),
                   ), 
     selected =3*3*3)
 
-selectInput("fresh_flow", label = h4("3. How is the room ventilated:"), 
-    choices = list("Window Open a Crack" = 2.5, 
-                   "Mechanical Ventilation" = 6,
-                   "Open Door and Open Windows" = 8,
-                   # "Air Conditioning Unit" = 0.2,
-                   "No Appreciable Ventilation" = 0.1), 
-    selected = 2.5)
+# selectInput("fresh_flow", label = h4("3. How is the room ventilated:"), 
+#     choices = list("Window Open a Crack" = 2.5, 
+#                    "Mechanical Ventilation" = 6,
+#                    "Open Door and Open Windows" = 8,
+#                    # "Air Conditioning Unit" = 0.2,
+#                    "No Appreciable Ventilation" = 0.1), 
+#     selected = 2.5)
 
+selectInput("fresh_flow", label = h4("3. What is the current CO2 level?:"), 
+    choices = list("1500 ppm" = 2.5, 
+                   "1000 ppm" = 6,
+                   "650 ppm" = 8,
+                   # "Air Conditioning Unit" = 0.2,
+                   "2100 ppm" = 0.1), 
+    selected = 2.5)
 
 # sliderInput("S", label = h4("Number of People in Room (-):"),
 #             min = 10, max = 200, value = 50, step = 5)
@@ -99,7 +106,7 @@ shinyWidgets::sliderTextInput(inputId = "maskProp",
 
 Row
 ------------
-### Airborne Risk Prediction Over Time Spent in a Room
+### 1. Airborne Risk Prediction Over Time Spent in a Room
 
 ```{r Concentration, echo=FALSE,warning=FALSE}
 # C <- function(tmax,lambdaV,lambdaD,lambdaR,q,V){
@@ -133,6 +140,10 @@ S <- reactive(
 N1 <- function(p,q,Q,t,S,I){
   return(S*(1-exp(-p*I*q/Q*t)))
 }
+N1 <- function(q,C,t,S,I){
+  f=(C-500)/37500
+  return(S*(1-exp(-f*I*q*t/(S+I))))
+}
 
 WR<-reactive({
   
@@ -158,14 +169,13 @@ renderPlotly({
             text = ~paste('Masked %=',input$maskProp,'<br>Number infected: ', (WR()$masked))) %>%
     add_trace(x=~time, y = ~masked_and_vent, name='With masking and extra window open', mode = 'plines',
             text = ~paste('Masked %=',input$maskProp, 'and Increased ventilation by opening an extra window','<br>Number infected: ', (WR()$masked_and_vent))) %>%
-  layout(legend = list(orientation = "h",   # show entries horizontally
-                     xanchor = "center",  # use center of legend as anchor
-                     x = 0.5),
-         yaxis = list(title = 'Number infected'), 
+  layout(
+         yaxis = list(title = 'Additional Number Infections'), 
          # xaxis = list(title = 'Time (hours)')
-             xaxis = list(title = 'Time Spent in the Room (hours)',
-      rangeslider = list(type = "time"))) # ,legend = list(x = 50, y = 2)
-  
+             xaxis = list(title = 'Time Spent in the Room (hours)')) # ,legend = list(x = 50, y = 2)
+  # legend = list(orientation = "h",   # show entries horizontally
+  #                    xanchor = "center",  # use center of legend as anchor
+  #                    x = 0.5),
 })
 ```
 
@@ -186,17 +196,17 @@ renderPlotly({
 Row
 -------------------------------------
 
-### Number of Additional Infected Occupants
-```{r table, echo=FALSE,warning=FALSE}
+### 2. Number of Additional Infected Occupants - 
+```{r table, echo=FALSE,warning=FALSE, height=1}
 
-renderTable( {WR() %>% slice_tail(n=1) %>% rename("No mitigation"="standard","Extra ventilation"="extra_ventilation","Masking"="masked","Both Masking and Extra Ventilation"="masked_and_vent")})
+renderTable(digits=0, {WR() %>% slice_tail(n=1) %>% rename("Time in room(h)"="time","No mitigation"="standard","Extra ventilation"="extra_ventilation","Masking"="masked","Both Masking and Extra Ventilation"="masked_and_vent")})
 
 ```
 
 Row
 -------------------------------------
 
-### % Reduction due to Masking
+### 3.1 % Reduction due to Masking Only
 
 ```{r guage_mask, echo=FALSE,warning=FALSE}
 
@@ -214,7 +224,7 @@ renderGauge({
 
 ```
 
-### % Reduction due to Additional Ventilation 
+### 3.2 % Reduction due to Additional Ventilation Only
 
 ```{r guage_vent, echo=FALSE,warning=FALSE}
 
@@ -226,7 +236,7 @@ renderGauge({
 })
 ```
 
-### % Reduction due to Additional Ventilation and Masking
+### 3.3 % Reduction due to Additional Ventilation and Masking
 
 ```{r guage_mask_vent, echo=FALSE,warning=FALSE}
 
