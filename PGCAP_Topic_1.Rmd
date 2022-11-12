@@ -13,13 +13,9 @@ pacman::p_load(ggplot2,dplyr,tidyr,readxl)
 
 ## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
 ```{r load data}
-df <- read_excel(path = "micro_teach_feedback.xlsx") %>% janitor::clean_names()
-df
+df <- read_excel(path = "microteach_feedback.xlsx") %>% janitor::clean_names() %>% 
+  select(-id,-start_time,-completion_time,-email)
 
 ```
 
@@ -27,9 +23,113 @@ df
 
 You can also embed plots, for example:
 
-```{r df, echo=FALSE}
-df %>% 
+```{r factors, echo=FALSE}
+df <- df %>% 
   mutate(across(.cols=c(b_bridge_in:s_summary),.fns = as.factor))
+
+df %>% 
+  select(name:s_summary) %>% 
+  rename("component"="which_component_of_the_micro_teach_are_you_providing_feedback_for_in_the_following_responses") %>%
+  pivot_longer(cols = c(b_bridge_in:s_summary),names_repair = "minimal",names_to = "part") %>% 
+  # mutate(value=as.numeric(as.factor(value))) %>% 
+  group_by(component,part,value) %>% 
+  tally() %>% 
+  group_by(component,part) %>% 
+  mutate(prop=prop.table(n)) %>% 
+  mutate(value=factor(value,levels=c("Strongly Disagree","Disagree","Neutral","Agree","Strongly Agree")))%>% 
+  mutate(part=factor(part,levels=c("b_bridge_in","o_outcomes","p_pre_assessment","p_participatory_learning","p_post_assessment","s_summary"))) %>% 
+  ggplot(aes(x=prop,y=part,fill=value))+ #reorder(part,prop)
+  geom_bar( position="stack", stat="identity")+
+  facet_wrap(~component)+
+  # coord_flip()  +
+  xlab("Percentage")+
+  ylab("Category")+
+  scale_x_continuous(labels = scales::percent_format())+
+  scale_fill_brewer(palette="PRGn")+
+  hrbrthemes::theme_ipsum()+
+  theme(legend.position="bottom")
+
+
+  # stat_summary(fun.data = "mean_cl_boot", colour = "red", linewidth = 2, size = 3)
+
+```
+# How did people score between both components
+```{r}
+df %>% 
+  select(name:s_summary) %>% 
+  rename("component"="which_component_of_the_micro_teach_are_you_providing_feedback_for_in_the_following_responses") %>%
+  pivot_longer(cols = c(b_bridge_in:s_summary),names_repair = "minimal",names_to = "part") %>% 
+  # mutate(value=as.numeric(as.factor(value))) %>% 
+  mutate(value=factor(value,levels=c("Strongly Disagree","Disagree","Neutral","Agree","Strongly Agree")))%>% 
+  mutate(part=factor(part,levels=c("b_bridge_in","o_outcomes","p_pre_assessment","p_participatory_learning","p_post_assessment","s_summary"))) %>% 
+  pivot_wider(names_from = "component")  %>% 
+  mutate(Synchronous=factor(Synchronous,levels=c("Strongly Disagree","Disagree","Neutral","Agree","Strongly Agree"))) %>%
+  mutate(S=as.numeric(Synchronous)-3) %>% 
+  mutate(A=as.numeric(Asynchronous)-3) %>%
+  mutate(diff_SA=S-A) %>% 
+  ggplot(aes(x=(diff_SA),y=reorder(name,diff_SA),fill=as.factor(diff_SA)))+
+  geom_bar(stat = 'identity', position = 'identity') +
+  # geom_point(aes(x=S,y=name),colour="red")+
+  # geom_point(aes(x=A,y=name),colour="blue")+
+  # geom_line(aes(x=S,y=name,group=component))+
+  facet_wrap(~part)+
+  xlab("Difference in Score between S and A (S-A)")+
+  ylab("Name")+
+  # scale_x_continuous(labels = scales::percent_format())+
+  # scale_fill_brewer(palette="PRGn")+
+  hrbrthemes::theme_ipsum()+
+  theme(legend.position="bottom")
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+# Correlation between Asynchronous and Synchronous Score
+
+```{r}
+df %>% 
+  select(name:s_summary) %>% 
+  rename("component"="which_component_of_the_micro_teach_are_you_providing_feedback_for_in_the_following_responses") %>%
+  pivot_longer(cols = c(b_bridge_in:s_summary),names_repair = "minimal",names_to = "part") %>% 
+  # mutate(value=as.numeric(as.factor(value))) %>% 
+  mutate(value=factor(value,levels=c("Strongly Disagree","Disagree","Neutral","Agree","Strongly Agree")))%>% 
+  mutate(part=factor(part,levels=c("b_bridge_in","o_outcomes","p_pre_assessment","p_participatory_learning","p_post_assessment","s_summary"))) %>% 
+  pivot_wider(names_from = "component")  %>% 
+  mutate(Synchronous=factor(Synchronous,levels=c("Strongly Disagree","Disagree","Neutral","Agree","Strongly Agree"))) %>%
+  mutate(S=as.numeric(Synchronous)-3) %>% 
+  mutate(A=as.numeric(Asynchronous)-3) %>% 
+  # mutate(diff_SA=S-A)
+  ggplot(aes(x=S,y=A,colour=part))+
+  geom_jitter(width=0.2,height=0.2)+
+  geom_smooth(method="lm")+
+  scale_y_continuous(limits=c(-2,2))+
+  scale_x_continuous(limits=c(-2,2))+
+  facet_wrap(~part)+
+  xlab("Asynchronous Score")+
+  ylab("Synchronous Score")+
+  # scale_x_continuous(labels = scales::percent_format())+
+  # scale_fill_brewer(palette="PRGn")+
+  hrbrthemes::theme_ipsum()+
+  theme(legend.position="bottom")
+
+  
+```
+# Analysis of score change
+```{r}
+df %>% 
+  select(name:s_summary) %>% 
+  rename("component"="which_component_of_the_micro_teach_are_you_providing_feedback_for_in_the_following_responses") %>%
+  pivot_longer(cols = c(b_bridge_in:s_summary),names_repair = "minimal",names_to = "part") %>% 
+  # mutate(value=as.numeric(as.factor(value))) %>% 
+  mutate(value=factor(value,levels=c("Strongly Disagree","Disagree","Neutral","Agree","Strongly Agree")))%>% 
+  mutate(value_numeric=as.numeric(value)-3) %>%
+  mutate(part=factor(part,levels=c("b_bridge_in","o_outcomes","p_pre_assessment","p_participatory_learning","p_post_assessment","s_summary"))) %>% 
+  # pivot_wider(names_from = "component")  %>% 
+  # mutate(Synchronous=factor(Synchronous,levels=c("Strongly Disagree","Disagree","Neutral","Agree","Strongly Agree"))) %>%
+  # mutate(S=as.numeric(Synchronous)-3) %>% 
+  # mutate(A=as.numeric(Asynchronous)-3) %>% 
+  group_by(component) %>% 
+    summarise(M=mean(value_numeric),SD=sd((value_numeric)))
+
+```
+
+
+
