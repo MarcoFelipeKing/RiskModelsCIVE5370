@@ -11,19 +11,16 @@ knitr::opts_chunk$set(echo = TRUE)
 pacman::p_load(ggplot2,dplyr,tidyr,readxl)
 ```
 
-## R Markdown
 
-```{r load data}
+```{r load data,echo=FALSE, warning=FALSE, include=FALSE}
 df <- read_excel(path = "microteach_feedback.xlsx") %>% janitor::clean_names() %>% 
   select(-id,-start_time,-completion_time,-email)
 
 ```
 
-## Including Plots
+## Preliminary look at scores for each component split by BOPPPS
 
-You can also embed plots, for example:
-
-```{r factors, echo=FALSE}
+```{r factors, echo=FALSE, warning=FALSE}
 df <- df %>% 
   mutate(across(.cols=c(b_bridge_in:s_summary),.fns = as.factor))
 
@@ -53,8 +50,32 @@ df %>%
   # stat_summary(fun.data = "mean_cl_boot", colour = "red", linewidth = 2, size = 3)
 
 ```
-# How did people score between both components
-```{r}
+
+## Analysis of scores for each component
+
+```{r scores S and A, echo=FALSE, warning=FALSE}
+df %>% 
+  select(name:s_summary) %>% 
+  rename("component"="which_component_of_the_micro_teach_are_you_providing_feedback_for_in_the_following_responses") %>%
+  pivot_longer(cols = c(b_bridge_in:s_summary),names_repair = "minimal",names_to = "part") %>% 
+  # mutate(value=as.numeric(as.factor(value))) %>% 
+  mutate(value=factor(value,levels=c("Strongly Disagree","Disagree","Neutral","Agree","Strongly Agree")))%>% 
+  mutate(value_numeric=as.numeric(value)-3) %>%
+  mutate(part=factor(part,levels=c("b_bridge_in","o_outcomes","p_pre_assessment","p_participatory_learning","p_post_assessment","s_summary"))) %>% 
+  # pivot_wider(names_from = "component")  %>% 
+  # mutate(Synchronous=factor(Synchronous,levels=c("Strongly Disagree","Disagree","Neutral","Agree","Strongly Agree"))) %>%
+  # mutate(S=as.numeric(Synchronous)-3) %>% 
+  # mutate(A=as.numeric(Asynchronous)-3) %>% 
+  group_by(component,part,value) %>% 
+    # summarise(M=mean(value_numeric),SD=sd((value_numeric))) # for numerical values
+  tally() %>% 
+  mutate(prop=round(prop.table(n)*100)) 
+
+```
+
+## How did individual people score between both components
+
+```{r,echo=FALSE, warning=FALSE,message=FALSE}
 df %>% 
   select(name:s_summary) %>% 
   rename("component"="which_component_of_the_micro_teach_are_you_providing_feedback_for_in_the_following_responses") %>%
@@ -82,9 +103,9 @@ df %>%
 
 ```
 
-# Correlation between Asynchronous and Synchronous Score
+## Correlation between Asynchronous and Synchronous Score
 
-```{r}
+```{r correlation A and S scores, echo=FALSE, warning=TRUE,message=FALSE}
 df %>% 
   select(name:s_summary) %>% 
   rename("component"="which_component_of_the_micro_teach_are_you_providing_feedback_for_in_the_following_responses") %>%
@@ -112,24 +133,39 @@ df %>%
 
   
 ```
-# Analysis of score change
+
+
+
+# Boxplots 
 ```{r}
-df %>% 
-  select(name:s_summary) %>% 
-  rename("component"="which_component_of_the_micro_teach_are_you_providing_feedback_for_in_the_following_responses") %>%
-  pivot_longer(cols = c(b_bridge_in:s_summary),names_repair = "minimal",names_to = "part") %>% 
-  # mutate(value=as.numeric(as.factor(value))) %>% 
-  mutate(value=factor(value,levels=c("Strongly Disagree","Disagree","Neutral","Agree","Strongly Agree")))%>% 
-  mutate(value_numeric=as.numeric(value)-3) %>%
-  mutate(part=factor(part,levels=c("b_bridge_in","o_outcomes","p_pre_assessment","p_participatory_learning","p_post_assessment","s_summary"))) %>% 
-  # pivot_wider(names_from = "component")  %>% 
-  # mutate(Synchronous=factor(Synchronous,levels=c("Strongly Disagree","Disagree","Neutral","Agree","Strongly Agree"))) %>%
-  # mutate(S=as.numeric(Synchronous)-3) %>% 
-  # mutate(A=as.numeric(Asynchronous)-3) %>% 
-  group_by(component) %>% 
-    summarise(M=mean(value_numeric),SD=sd((value_numeric)))
+datasets::mtcars %>% 
+  ggplot()+
+  geom_boxplot(aes(x=as.factor(cyl),y=hp,fill=as.factor(cyl)))+
+  xlab("Number of Cylinders")+
+  ylab("Horsepower")+
+  scale_fill_brewer(palette = "Set1","Number of Cylinders")+
+  hrbrthemes::theme_ipsum(base_size = 14,axis_title_size = 14)+
+  theme(legend.position = " ")
+
+
+```
+#violinplots
+```{r}
+datasets::mtcars %>% 
+  ggplot()+
+  geom_violin(aes(x=as.factor(cyl),y=hp,fill=as.factor(cyl)),draw_quantiles = c(0.25,0.5,0.75))+
+  geom_jitter(aes(x=as.factor(cyl),y=hp,fill=as.factor(cyl)),width = 0.2,alpha=0.5)+
+  xlab("Number of Cylinders")+
+  ylab("Horsepower")+
+  scale_fill_brewer(palette = "Set1","Number of Cylinders")+
+  hrbrthemes::theme_ipsum(base_size = 14,axis_title_size = 14)+
+  theme(legend.position = " ")
+
 
 ```
 
 
+```{r}
+datasets::ste
+```
 
