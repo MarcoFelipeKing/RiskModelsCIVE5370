@@ -134,38 +134,3 @@ df %>%
   
 ```
 
-
-
-# Boxplots 
-```{r}
-datasets::mtcars %>% 
-  ggplot()+
-  geom_boxplot(aes(x=as.factor(cyl),y=hp,fill=as.factor(cyl)))+
-  xlab("Number of Cylinders")+
-  ylab("Horsepower")+
-  scale_fill_brewer(palette = "Set1","Number of Cylinders")+
-  hrbrthemes::theme_ipsum(base_size = 14,axis_title_size = 14)+
-  theme(legend.position = " ")
-
-
-```
-#violinplots
-```{r}
-datasets::mtcars %>% 
-  ggplot()+
-  geom_violin(aes(x=as.factor(cyl),y=hp,fill=as.factor(cyl)),draw_quantiles = c(0.25,0.5,0.75))+
-  geom_jitter(aes(x=as.factor(cyl),y=hp,fill=as.factor(cyl)),width = 0.2,alpha=0.5)+
-  xlab("Number of Cylinders")+
-  ylab("Horsepower")+
-  scale_fill_brewer(palette = "Set1","Number of Cylinders")+
-  hrbrthemes::theme_ipsum(base_size = 14,axis_title_size = 14)+
-  theme(legend.position = " ")
-
-
-```
-
-
-```{r}
-datasets::ste
-```
-
