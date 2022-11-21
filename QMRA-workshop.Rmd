@@ -1,0 +1,451 @@
+---
+title: "QMRA for WASH MSc"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+    social: menu
+    source_code: embed
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(shiny)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+library(devtools)
+library(plotly)
+library(shinyWidgets)
+# devtools::install_github("joelkuiper/personograph")
+library(personograph)
+```
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+<!-- 1. Select a input parameters:  -->
+  
+Use the <b>drop-down menu</b> and <b>sliders </b> 1 to 5 to predict the risk of infection for a given infection.
+```{r}
+
+selectInput("q", label = h4("1. Infection of interest:"), 
+    choices = list("SARS-2" = 25, "Measels" = 400, "Tuberculosis" = 13,"Rotavirus"=0.1), 
+    selected = 25)
+#     
+# selectInput("V", label = h4("2. Type of room:"), 
+#     choices = list("Small Meeting Room (4 occupants)" = 3*3*3, 
+#                    "Open plan office (10 occupants)" = 4*4*4,
+#                    "Lecture theatre (80 occupants)" = 10*10*4
+#                   ), 
+#     selected =3*3*3)
+# 
+# sliderInput("k", label = h4("Exponential dose-response factor (-):"),
+#             min = 0, max = 20, value = 1, step = 1)
+
+# selectInput("fresh_flow", label = h4("3. How is the room ventilated:"), 
+#     choices = list("Window Open a Crack" = 2.5, 
+#                    "Mechanical Ventilation" = 6,
+#                    "Open Door and Open Windows" = 8,
+#                    # "Air Conditioning Unit" = 0.2,
+#                    "No Appreciable Ventilation" = 0.1), 
+#     selected = 2.5)
+
+# selectInput("fresh_flow", label = h4("3. What is the current CO2 level?:"), 
+#             choices = list(                   "650 ppm" = 8,
+#                                               "1000 ppm" = 6,
+#                                               "1500 ppm" = 2.5, 
+#                                               # "Air Conditioning Unit" = 0.2,
+#                                               "2100 ppm" = 0.1), 
+#             selected = 2.5)
+
+# sliderInput("S", label = h4("Number of People in Room (-):"),
+#             min = 10, max = 200, value = 50, step = 5)
+ 
+# sliderInput("I", label = h4("Number of Infectors (-):"),
+#             min = 1, max = 3, value = 1, step = 1)
+
+
+sliderInput(inputId = "r",label = h4("4. How long is the room occupied [hrs]:"),
+            min = 1e-4, max = 1e-3,value=4,step=5e-4)
+
+
+# selectInput(inputId = "V",label = "How is your room ventilated:", choices = c("Openable Windows","Mechanical Ventilation","Air conditioning unit","No Appreciable Ventilation"),selected = "No Appreciable Ventilation")
+
+# shinyWidgets::sliderTextInput(inputId = "maskProp",
+#                               label = h4("5. Percentage of people wearing surgical masks [%]:"),
+#                               grid = TRUE,
+#                               force_edges = TRUE,
+#                               choices = c(0,10,20,30,40,50,60,70,80,90,100),selected = 80)
+
+# shinyWidgets::sliderTextInput(inputId = "maskPropFFP",
+#                               label = h4("5. Percentage of people wearing an FFP-3 mask [%]:"),
+#                               grid = TRUE,
+#                               force_edges = TRUE,
+#                               choices = c(0,10,20,30,40,50,60,70,80,90,100),selected = 0)
+
+# selectizeInput("dropExhale", label = h4("Expert setting: Modelling engine choice "),
+#                choices= list(`Coughing` = list("BLO coughing" = "2", "Duguid" = "4", "L&R" = "5"),
+#                              `Speaking` = list("BLO speaking" = "3"),
+#                              `Breathing` = list("BLO breathing" = "1")))
+```
+
+<!-- si la persona infectada lleva mascarilla entonces el 0.5 aplica a q, no a p -->
+<!-- N_E = S_1(1-exp{...p}) + S_2(1-exp{...0.5p}) -->
+<!-- multiplicas por p (pulmonary rate), osea que si consideras 0.5p lo que dices es que esa persona respira el 50% -->
+
+<!-- Column {data-width=650} -->
+<!-- ----------------------------------------------------------------------- -->
+<!-- Row -->
+<!-- ------------ -->
+
+<!-- ### How to use this dashboard: -->
+
+<!-- This dashboard tool is intended as a way of evaluating current exposure from airborne infection in an indoor space. The model is based on the Wells-Riley airborne exposure model which assumes a well-mixed environment and static people. -->
+
+<!-- * **Airborne Risk**:  Evaluate the risk of infection from an airborne microorganism by using the sliders and drop-down menus select the type of room, type of ventilation and number of occupants. -->
+<!-- * **Mitigation Strategies**: you can control the risk by investigating "what-if" scenarios, including what happens if 50% of the participatns are masked versus if you can open a window. -->
+
+Row
+------------
+### 1. Plot of Experimental Rotavirus Infections vs Predictions
+```{r import rotavirus}
+rotavirus <- vroom::vroom("data/rotavirus.csv",n_max = 28) %>% 
+  mutate(across(.cols=everything(),.fns = stringr::str_trim)) %>% 
+  mutate(across(.cols=1:4,.fns = as.numeric)) %>% 
+  rename("infected"="symtoms_and_infection","not_infected"="no_symptoms_and_infection") %>% 
+  mutate(frac_infected=infected/total) 
+```
+```{r, echo=FALSE,warning=FALSE}
+
+exponential_model <- function(r){
+  return(1-exp(-r*seq(from=0,to=1e6,by=100)))
+} 
+
+
+WR<-reactive({
+  
+  df <- data.frame(dose=seq(from=0,to=1e6,by=100),exp_m=exponential_model(input$r))
+
+  })
+  
+# renderPlot({
+#   ggplot()+
+#   # geom_point(rotavirus,aes(x=dose,y=frac_infected,colour=strain,shape=strain))+
+#   geom_line(WR(),aes(x=WR()$dose,y=WR()$exp_m),colour="black")+
+#   scale_x_continuous(trans="log10")+
+#   hrbrthemes::theme_ipsum()+
+#   xlab("Dose (PFU)")+
+#   ylab("Fraction of infected")
+# })
+
+renderPlotly({
+  plot_ly() %>% 
+  add_trace(data=data.frame(dose=seq(from=0,to=1e6,by=100),exp_m=exponential_model(1e-4)), x=~dose, y=~exp_m,
+        name='Exponential model',  hoverinfo = 'text',
+        text = ~paste('Baseline risk','<br>Number infected: ', 'a'),
+        mode = 'plines') %>%
+  plotly::add_markers(data=rotavirus,x=~dose, y = ~frac_infected,color=~strain, mode = 'scatter',
+            text = ~paste('Fraction infected: ', frac_infected)) %>%
+  # add_trace(x=~time, y = ~masked, name='With masking only', mode = 'plines',
+  #           text = ~paste('Masked %=',input$maskProp,'<br>Number infected: ', (WR()$masked))) %>%
+  #   add_trace(x=~time, y = ~masked_and_vent, name='With masking and extra window open', mode = 'plines',
+  #           text = ~paste('Masked %=',input$maskProp, 'and Increased ventilation by opening an extra window','<br>Number infected: ', (WR()$masked_and_vent))) %>%
+  layout(
+         yaxis = list(title = 'Probability of infection'), 
+         # xaxis = list(title = 'Time (hours)')
+             xaxis = list(title = 'Dose (PFU)',type = "log")) # ,legend = list(x = 50, y = 2)
+  # legend = list(orientation = "h",   # show entries horizontally
+  #                    xanchor = "center",  # use center of legend as anchor
+  #                    x = 0.5),
+})
+
+
+```
+
+```{r Concentration, echo=FALSE,warning=FALSE}
+# C <- function(tmax,lambdaV,lambdaD,lambdaR,q,V){
+#   Particle model - not used here
+#   lambda=lambdaV+lambdaD+lambdaR
+#   t=seq(0,tmax,by=0.1)
+#   return(q/(V*lambda)*(1-exp(-lambda*t)))
+#   
+# }
+
+S <- reactive(
+  {
+    if(input$V==3*3*3) {
+      s=3 # +1 infector
+    } else if(input$V==4*4*4) {
+      s=9
+    } else {
+      s=79
+    }
+    return(data.frame(s=s))
+  }
+)
+
+# Funccion de Wells-Riley modo estacionario
+N1 <- function(p,q,Q,t,S,I){
+  return(S*(1-exp(-p*I*q/Q*t)))
+}
+
+exponential_model <- function(k){
+  return(1-exp(-seq(from=0,to=1e6,by=10)/k))
+}
+
+WR<-reactive({
+  
+  df <- data.frame(dose=seq(from=0,to=1e6,by=10),exponential=exponential_model(2.5))
+
+  })
+
+renderPlotly({
+  plot_ly(WR(), x=~time, y=~exponential,
+        name='No mitigation',  hoverinfo = 'text',
+        text = ~paste('Baseline risk','<br>Number infected: ', (WR()$exponential)),
+        type = 'scatter') %>%
+  # add_trace(x=~time, y = ~extra_ventilation, name='Opening an extra window only', mode = 'plines',
+  #           text = ~paste('Increased ventilation by opening an extra window','<br>Number infected: ', (WR()$extra_ventilation))) %>%
+  # add_trace(x=~time, y = ~masked, name='With masking only', mode = 'plines',
+  #           text = ~paste('Masked %=',input$maskProp,'<br>Number infected: ', (WR()$masked))) %>%
+  #   add_trace(x=~time, y = ~masked_and_vent, name='With masking and extra window open', mode = 'plines',
+  #           text = ~paste('Masked %=',input$maskProp, 'and Increased ventilation by opening an extra window','<br>Number infected: ', (WR()$masked_and_vent))) %>%
+  layout(
+         yaxis = list(title = 'Probability of infection'), 
+         # xaxis = list(title = 'Time (hours)')
+             xaxis = list(title = 'Time Spent in the Room (hours)')) # ,legend = list(x = 50, y = 2)
+  # legend = list(orientation = "h",   # show entries horizontally
+  #                    xanchor = "center",  # use center of legend as anchor
+  #                    x = 0.5),
+})
+```
+
+```{r AUC, echo=FALSE,warning=FALSE}
+
+ # AUC function -------------------------------------------------------
+  
+  AUC <- function(x,y){ #To allow for non-uniform time-steps
+    sum(diff(x[order(x)])*zoo::rollmean(y[order(x)],2))
+  }
+  
+
+```
+
+
+
+<!-- Row {.tabset .tabset-fade} -->
+Row
+-------------------------------------
+
+### 2. Number of Additional Infected Occupants - 
+```{r table, echo=FALSE,warning=FALSE, height=1}
+
+renderTable(digits=0, {WR() %>% slice_tail(n=1) %>% rename("Time in room(h)"="time","No mitigation"="standard","Extra ventilation"="extra_ventilation","Masking"="masked","Both Masking and Extra Ventilation"="masked_and_vent")})
+
+```
+
+Row
+-------------------------------------
+
+### 3.1 % Reduction of RISK due to Masking Only - Surgical masks reduces aerosols by 50%
+
+```{r guage_mask, echo=FALSE,warning=FALSE}
+
+# rate <- reactive({
+#   a <- WR() %>% slice_tail(n=1) %>% mutate(masking=(standard-masking)/standard*100) %>% pull(masking)
+#   return(a)
+# })
+
+renderGauge({
+  rate <- WR() %>% slice_tail(n=1) %>% mutate(masked=(standard-masked)/standard*100) %>% pull(masked)
+ gauge(round(rate), min = 0, max = 100, symbol = '%', gaugeSectors(
+  success = c(80, 100), warning = c(40, 79), danger = c(0, 39)
+))
+})
+
+```
+
+### 3.2 % Reduction due to 20% Additional Ventilation Only 
+
+```{r guage_vent, echo=FALSE,warning=FALSE}
+
+renderGauge({
+  rate <- WR() %>% slice_tail(n=1) %>% mutate(extra_ventilation=(standard-extra_ventilation)/standard*100) %>% pull(extra_ventilation)
+ gauge(round(rate), min = 0, max = 100, symbol = '%', gaugeSectors(
+  success = c(80, 100), warning = c(40, 79), danger = c(0, 39)
+))
+})
+```
+
+### 3.3 % Reduction due to Additional Ventilation and Masking % Chosen in 5.
+
+```{r guage_mask_vent, echo=FALSE,warning=FALSE}
+
+renderGauge({
+  rate <- WR() %>% slice_tail(n=1) %>% mutate(masked_and_vent=(standard-masked_and_vent)/standard*100) %>% pull(masked_and_vent)
+ gauge(round(rate), min = 0, max = 100, symbol = '%', gaugeSectors(
+  success = c(80, 100), warning = c(40, 79), danger = c(0, 39)
+))
+})
+```
+
+
+<!-- ### Number of Additional Infected - Under the Standard Non-Mitigated Scenario  -->
+<!-- ```{r personograph, echo=FALSE,warning=FALSE} -->
+
+<!-- w <- reactive({ -->
+<!--   a<-WR() %>% #data.frame(standard=runif(1,min=0,max=S()$s))%>% #risk i -->
+<!--   rename("risk"="standard") %>%  -->
+<!--   # filter(name=="C1")%>% #Choose any patient otherwise you're triplicating the subsequent calculations -->
+<!--   select(risk) %>% -->
+<!--   slice_tail(n=1) %>% # last number #FIXME doesn't move with slider -->
+<!--   mutate(risk=risk/(S()$s)) %>% # convert to risk -->
+<!--   mutate(NumInfected = list(rbinom(n=100, size = as.numeric(S()$s), prob = risk))) -->
+
+<!-- #Calculate mean and sd of all values in the nested lists -->
+<!-- ms <- function(a, col="NumInfected") { -->
+<!--   u <- unlist(a[[col]]) -->
+<!--   return(data.frame(Mean=ceiling(mean(u)),SD=ceiling(sd(u)))) -->
+<!-- } -->
+
+<!-- a<-ms(a) -->
+
+<!-- # z<-rbind(a,c(S()$s-a$Mean,S()$s-a$SD)) -->
+<!-- z<-z/S()$s -->
+<!-- z$Infected <-  as.factor(c("Infected", "Uninfected")) -->
+<!-- # Infected=1-z$Mean[1] -->
+<!-- data<-list(Infected=z$Mean[1], Possibly=z$SD[1], Uninfected=1-(z$Mean[1]) ) -->
+
+<!-- tmp <- data$Infected+data$Possibly+data$Uninfected -->
+<!-- data$Infected <- data$Infected/tmp -->
+<!-- data$Possibly <- data$Possibly/tmp -->
+<!-- data$Uninfected <- data$Uninfected/tmp -->
+
+<!--   return(data) -->
+<!-- }) -->
+<!-- # renderTable( {WR()}) -->
+<!-- renderPlot({ -->
+
+<!--     wafflePlot<- -->
+<!--     w() %>% # was w() -->
+<!--     personograph( -->
+<!--       n.icons=as.numeric(S()$s), -->
+<!--       # dimensions=c(as.numeric(S()$s),10), -->
+<!--       plot.width=0.8, -->
+<!--       icon.style=4, -->
+<!--       colors=list(Uninfected="grey", Infected="blue",Possibly="orange"), -->
+<!--       force.fill = TRUE, -->
+<!--       fig.cap = "Average number of additional infected occupants (mean=blue, standard deviation=orange)" -->
+<!--     ) -->
+
+<!--   wafflePlot -->
+<!--   }) -->
+<!-- ``` -->
+
+<!-- ### Number of Infected - Extra Window Open  -->
+<!-- ```{r personograph_extra_vent, echo=FALSE,warning=FALSE} -->
+
+<!-- w <- reactive({ -->
+<!--   a<-WR() %>% #data.frame(standard=runif(1,min=0,max=S()$s))%>% #risk i -->
+<!--   rename("risk"="extra_ventilation") %>%  -->
+<!--   # filter(name=="C1")%>% #Choose any patient otherwise you're triplicating the subsequent calculations -->
+<!--   select(risk) %>% -->
+<!--   slice_tail(n=1) %>% # last number #FIXME doesn't move with slider -->
+<!--   mutate(risk=risk/(S()$s)) %>% # convert to risk -->
+<!--   mutate(NumInfected = list(rbinom(n=100, size = as.numeric(S()$s), prob = risk))) -->
+
+<!-- #Calculate mean and sd of all values in the nested lists -->
+<!-- ms <- function(a, col="NumInfected") { -->
+<!--   u <- unlist(a[[col]]) -->
+<!--   return(data.frame(Mean=ceiling(mean(u)),SD=ceiling(sd(u)))) -->
+<!-- } -->
+
+<!-- a<-ms(a) -->
+
+<!-- z<-rbind(a,c(S()$s-a$Mean,S()$s-a$SD)) -->
+<!-- z<-z/S()$s -->
+<!-- z$Infected <-  as.factor(c("Infected", "Uninfected")) -->
+<!-- # Infected=1-z$Mean[1] -->
+<!-- data<-list(Infected=z$Mean[1], Possibly=z$SD[1],Uninfected=1-(z$Mean[1]) ) -->
+<!-- # data<-list(Infected=1-z$Mean[1], Possibly=z$SD[1],Uninfected=(z$Mean[1])) -->
+
+<!-- tmp <- data$Infected+data$Possibly+data$Uninfected -->
+<!-- data$Infected <- data$Infected/tmp -->
+<!-- data$Possibly <- data$Possibly/tmp -->
+<!-- data$Uninfected <- data$Uninfected/tmp -->
+
+<!--   return(data) -->
+<!-- }) -->
+<!-- # renderTable( {w()}) -->
+<!-- renderPlot({ -->
+
+<!--     wafflePlot<- -->
+<!--     w() %>% # was w() -->
+<!--     personograph( -->
+<!--       n.icons=as.numeric(S()$s), -->
+<!--       # dimensions=c(as.numeric(S()$s),10), -->
+<!--       plot.width=0.8, -->
+<!--       icon.style=4, -->
+<!--       colors=list(Uninfected="grey", Infected="blue",Possibly="orange"), -->
+<!--       force.fill = TRUE, -->
+<!--       fig.cap = "Average number of additional infected occupants (mean=blue, standard deviation=orange)" -->
+<!--     ) -->
+
+<!--   wafflePlot -->
+<!--   }) -->
+<!-- ``` -->
+
+<!-- ### Number of Infected - Masking -->
+<!-- ```{r personograph_masking, echo=FALSE,warning=FALSE} -->
+
+<!-- w <- reactive({ -->
+<!--   a<-WR() %>% #data.frame(standard=runif(1,min=0,max=S()$s))%>% #risk i -->
+<!--   rename("risk"="masked") %>%  -->
+<!--   # filter(name=="C1")%>% #Choose any patient otherwise you're triplicating the subsequent calculations -->
+<!--   select(risk) %>% -->
+<!--   slice_tail(n=1) %>% # last number #FIXME doesn't move with slider -->
+<!--   mutate(risk=risk/(S()$s)) %>% # convert to risk -->
+<!--   mutate(NumInfected = list(rbinom(n=100, size = as.numeric(S()$s), prob = risk))) -->
+
+<!-- #Calculate mean and sd of all values in the nested lists -->
+<!-- ms <- function(a, col="NumInfected") { -->
+<!--   u <- unlist(a[[col]]) -->
+<!--   return(data.frame(Mean=ceiling(mean(u)),SD=ceiling(sd(u)))) -->
+<!-- } -->
+
+<!-- a<-ms(a) -->
+
+<!-- z<-rbind(a,c(S()$s-a$Mean,S()$s-a$SD)) -->
+<!-- z<-z/S()$s -->
+<!-- z$Infected <-  as.factor(c("Infected", "Uninfected")) -->
+<!-- # Infected=1-z$Mean[1] -->
+<!-- data<-list(Infected=z$Mean[1], Possibly=z$SD[1],Uninfected=1-(z$Mean[1]) ) -->
+<!-- # data<-list(Infected=1-z$Mean[1], Possibly=z$SD[1],Uninfected=(z$Mean[1])) -->
+
+<!-- tmp <- data$Infected+data$Possibly+data$Uninfected -->
+<!-- data$Infected <- data$Infected/tmp -->
+<!-- data$Possibly <- data$Possibly/tmp -->
+<!-- data$Uninfected <- data$Uninfected/tmp -->
+
+<!--   return(data) -->
+<!-- }) -->
+<!-- # renderTable( {w()}) -->
+<!-- renderPlot({ -->
+
+<!--     wafflePlot<- -->
+<!--     w() %>% # was w() -->
+<!--     personograph( -->
+<!--       n.icons=as.numeric(S()$s), -->
+<!--       # dimensions=c(as.numeric(S()$s),10), -->
+<!--       plot.width=0.8, -->
+<!--       icon.style=4, -->
+<!--       colors=list(Uninfected="grey", Infected="blue",Possibly="orange"), -->
+<!--       force.fill = TRUE, -->
+<!--       fig.cap = "Average number of additional infected occupants (mean=blue, standard deviation=orange)" -->
+<!--     ) -->
+
+<!--   wafflePlot -->
+<!--   }) -->
+<!-- ``` -->
