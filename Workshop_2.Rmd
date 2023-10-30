@@ -1,0 +1,77 @@
+---
+title: "Session 10 - Airborne Infection Transmission Models"
+author: "CIVE5370 - Indoor and Urban Air Quality"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# install.packages("pacman")
+#pacman::p_load(shiny, deSolve,dplyr,tidyr,ggplot2,ggpubr,plotly)
+
+```
+
+## Introduction
+
+Airborne infections are diseases that are caused by microorganisms and spread through the air. They can be transmitted when an infected person exhales, talks, coughs, or sneezes, releasing droplets and particles that can remain in the air and be inhaled by others. Understanding airborne transmission is vital for controlling outbreaks and designing effective interventions.
+
+There are several models used to understand and predict the spread of airborne infections:
+
+## Dose-Response Model
+
+The dose-response model is a fundamental concept in epidemiology and toxicology. It describes the relationship between the amount of exposure (dose) to a pathogen and the resulting chance of infection (response). In the context of airborne infections, it can help determine the probability of infection based on the number of inhaled infectious particles.
+
+### Example 1. 
+
+```{r}
+particles <- c(1, 10, 100, 1000, 10000, 100000)
+infection_rate <- c(1, 5, 10, 40, 70, 90)
+
+plot(particles, infection_rate, type="b", 
+     main="Dose-Response Curve for Viral Exposure", 
+     xlab="Viral Particles (number)", 
+     ylab="Infection Rate (%)", 
+     log="x")  # Note the log scale for x-axis, common for this kind of data
+```
+
+
+
+
+## Wells-Riley Model
+
+The Wells-Riley equation is a mathematical model developed to estimate the risk of infection from respiratory diseases in indoor environments. It considers the number of infectors, the duration of exposure, the rate of airflow and other factors to predict the probability of a susceptible person getting infected in a shared indoor space.
+
+$$ P = 1 - e^{-Iqpt/Q} $$
+
+Where:
+- \( P \) is the probability of infection.
+- \( I \) is the number of infectors.
+- \( q \) is the quanta generation rate (quanta per hour).
+- \( p \) is the pulmonary ventilation rate (cubic meters per hour).
+- \( t \) is the exposure time (hours).
+- \( Q \) is the room ventilation rate (cubic meters per hour).
+
+## SIR Model
+
+The SIR model is one of the simplest compartmental models, and it divides the population into three compartments:
+
+- **S**: Susceptible individuals who can be infected.
+- **I**: Infected individuals who can spread the disease.
+- **R**: Recovered individuals who are immune.
+
+The SIR model helps in understanding the dynamics of infectious diseases and predicting their spread over time. The basic reproduction number, \( R_0 \), is a key parameter in this model, representing the average number of secondary infections caused by an infected individual.
+
+## SEIR Model
+
+The SEIR model is an extension of the SIR model, adding an additional compartment:
+
+- **E**: Exposed individuals who have been exposed to the virus but are not yet infectious.
+
+This compartment accounts for the incubation period, the time between exposure to the infection and the onset of infectiousness. The SEIR model provides a more detailed view of the disease's progression in individuals and the population.
+
+## Conclusion
+
+Understanding airborne transmission models is critical in epidemiology to predict and control the spread of diseases. These models, when coupled with real-world data, can guide public health policies and interventions to manage and mitigate outbreaks effectively.
+
