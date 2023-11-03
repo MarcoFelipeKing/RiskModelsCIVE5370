@@ -9,21 +9,45 @@ runtime: shiny
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 # install.packages("pacman")
-pacman::p_load(shiny, deSolve,dplyr,tidyr,ggplot2,ggpubr,plotly)
+pacman::p_load(shiny, deSolve,dplyr,tidyr,ggplot2,ggpubr,plotly,hrbrthemes)
 
 ```
-The following document will help you work through some of the concepts we covered earlier about controlling infection and mitigation strategies. Often there are trade-offs or diminishing returns on a strategy. 
+The following document will help you work through some of the concepts we covered earlier about predicting the spread of airborne infection and mitigation strategies. Often there are trade-offs or diminishing returns on a strategy. 
 
-## Learning Objectives:
+## 1.0 Learning Objectives:
 
 *By the end of the session you will be able to:*
 
-- Evaluate the risk of airborne infection for a variety of microorganisms - Wells-Riley Model
-- Evaluate the relative importance of increasing ventilation, masking or early testing on the number of infections at any one time - SEIR model.
+  - Apply the dose-response relationship to
+  - Evaluate the risk of airborne infection for a variety of microorganisms - Wells-Riley Model
+  - Evaluate the relative importance of increasing ventilation, masking or early testing on the number of infections at any one time - SEIR model.
+
+# 2.0 Introduction around airborne infection
+
+Airborne infections are diseases that are caused by microorganisms and spread through the air. They can be transmitted by bioaerosols released when an infected person exhales, talks, coughs, or sneezes, releasing droplets and particles that can remain in the air and be inhaled by others. Understanding airborne transmission is vital for controlling outbreaks and designing effective interventions.
+
+There are several models used to understand and predict the spread of airborne infections:
+
+## 2.1 Dose-Response Model
+
+The dose-response model is a fundamental concept in epidemiology and toxicology. It describes the relationship between the amount of exposure (dose) to a pathogen and the resulting chance of infection (response). In the context of airborne infections, it can help determine the probability of infection based on the number of inhaled infectious particles.
+
+### Example 1. 
+
+```{r}
+particles <- c(1, 10, 100, 1000, 10000, 100000)
+infection_rate <- c(1, 5, 10, 40, 70, 90)
+
+plot(particles, infection_rate, type="b", 
+     main="Dose-Response Curve for Viral Exposure", 
+     xlab="Viral Particles (number)", 
+     ylab="Infection Rate (%)", 
+     log="x")  # Note the log scale for x-axis, common for this kind of data
+```
 
 
 
-## 1. Wells-Riley Model
+## 2.2 Wells-Riley Model
 
 The Wells-Riley equation is a method of exploring the effect of ventilation on infection risk. Recall that the equation for the steady-state model is as follows:
 
@@ -40,20 +64,17 @@ sliderInput(inputId = "quanta",label = "Quanta per hour:",
 numericInput("p", "Pulmonary breathing rate (m3/h):", 1)
 
 sliderInput(inputId = "Q",label = "Fresh air flow rate [m3/h]:",
-            min = 100, max = 10000,value=200,step=200)
+            min = 1, max = 10000,value=200,step=200)
 
 sliderInput("S", label = "Number of Susceptibles (-):",
-            min = 30, max = 300, value = 100, step = 10)
+            min = 4, max = 300, value = 100, step = 10)
 # 
 sliderInput("I", label = "Number of Infectors (-):",
             min = 1, max = 3, value = 1, step = 1)
 
 sliderInput(inputId = "tmax",label = "Time to plot [hrs]:",
-            min = 1, max = 100,value=100,step=5)
+            min = 1, max = 48,value=24,step=2)
 
-```
-
-```{r Wells-Riley, echo=FALSE, warning=FALSE}
 
 N <- function(p,q,Q,t,S,I){
   return(S*(1-exp(-p*I*q/Q*t)))
@@ -92,5 +113,7 @@ df() %>%
 
 
 ```
+
+
 
 ## 2. SEIR model

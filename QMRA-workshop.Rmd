@@ -19,7 +19,7 @@ library(dplyr)
 library(plotly)
 library(shinyWidgets)
 # devtools::install_github("joelkuiper/personograph")
-require(rbokeh)
+# require(rbokeh)
 ```
 
 Column {.sidebar}
@@ -139,7 +139,7 @@ WR<-reactive({
  return(df)
   })
 
-# renderPlot({
+# renderPlot({ #rbokeh
 # 
 #   figure() %>%
 #   # ly_points(WR()$dose, WR()$exp_m)
