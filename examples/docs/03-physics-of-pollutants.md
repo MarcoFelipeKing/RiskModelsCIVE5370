@@ -1,0 +1,64 @@
+# Physics of Pollutants 
+
+### Question: Particle Deposition and Space Missions
+
+**a.** Calculate the settling velocity for spherical particles with a density of 2 g/cm³ and a diameter of 10 micrometers in a room at standard atmospheric conditions. Assume a Cunningham correction factor \( C_c = 1 \). **[5 marks]**
+
+**b.** Adjust the settling velocity for non-spherical particles with a dynamic shape factor \( \chi = 1.5 \). Explain the impact of the dynamic shape factor on particle deposition and the assumptions behind using the spherical particle model. **[5 marks]**
+
+**c.** Given that an air-lock to a spacecraft must be cleared of such particles to prevent contamination, calculate the time it would take to completely clear the air-lock with a volume of 2 m³ and a ventilation rate of 10 m³/min. **[5 marks]**
+
+**d.** Discuss the importance of particle deposition studies in the context of protecting astronauts from microorganisms and contaminants during space missions. Address the challenges and considerations that engineers and health scientists must account for in the design of air filtration and environmental control systems for spacecraft. **[10 marks]**
+
+---
+
+### Question: Combustion Products and Volumetric Analysis
+
+**a.** For the complete combustion of octane (C8H18), write down the balanced chemical equation and calculate the volumetric composition of the combustion products, assuming excess air and complete conversion to CO2 and H2O. **[5 marks]**
+
+**b.** Convert 50 ppm of carbon monoxide (CO) to mg/m³ under standard conditions (0°C and 1 atm) and compare this with the permissible exposure limit for CO in an industrial setting. **[5 marks]**
+
+**c.** Considering the above combustion process occurs in an urban area, discuss the potential health impacts of exposure to combustion by-products, particularly in densely populated cities where personal vehicles are a significant source of air pollution. **[10 marks]**
+
+**d.** Propose two policy measures that could be adopted to reduce exposure to harmful combustion by-products in urban environments. Your answer should consider the effectiveness and feasibility of these measures within the context of a developing country. **[5 marks]**
+
+---
+
+### Question: Dispersion of Contaminants and Public Health Policy
+
+**a.** A factory releases a pollutant at a constant rate. Using the simplified dispersion formula \( C_{max} = \frac{Q}{UWH} \), where \( Q \) is in kg/s, \( U \) is m/s, \( W \) is in m, and \( H \) is in m, calculate the maximum ground-level concentration of the pollutant at a certain distance downwind from the source. Provide sample calculations for a scenario with given parameters. **[5 marks]**
+
+**b.** Convert the concentration of a pollutant from ppm to mg/m³ and discuss how these units relate to threshold limit values used in environmental regulations. **[5 marks]**
+
+**c.** Reflect on the challenges of establishing environmental regulations for air quality in rapidly developing urban areas, considering factors such as industrial growth, population density, and economic priorities. **[10 marks]**
+
+**d.** Critically assess the role of environmental engineers in shaping public health policy to ensure the well-being of populations in the face of industrial pollution. **[5 marks]**
+
+---
+
+
+### Question: Diserpsion of Pollutants and Atmospheric Stability
+
+A 110m chimney produces sulphur dioxide from an industrial plant inland from the city.  At 2am December 15th, a weather anemometer measures calm winds of 2.5m/s and very little cloud is visible. 
+
+**a.** State the atmospheric stability class  
+
+**b.** The mixing depth is at 45m. Describe in 3 sentences what is likely to happen to the contaminants from the chimney during the night, mentioning probable wind direction. Sketch a graph of air temperature vs height. 
+
+**c.** As the sun rises the low-lying moist air then mixes with the sulphur dioxide (SO2) in a concentration of 8mg/m3, eventually creating H2SO4. The short-term maximum recommended exposure to sulphur dioxide is 5ppm.  
+
+**d.** 	Calculate the concentration in ppm of the pollutant and decide whether this poses a significant health risk. **[10 marks]** 
+
+**e.** Explain why the rising of the sun can alter the stability class of the atmosphere **[5 marks]** 
+
+
+
+
+For each question's marking scheme:
+
+
+- **Calculation Accuracy** (40%): Correctness of the calculation and final numerical answer.
+- **Methodological Explanation** (10%): Clear explanation of the steps taken and methods used.
+- **Discussion Depth** (40%): Depth and breadth of discussion, critical thinking, and the inclusion of multiple perspectives.
+- **Real-World Application** (10%): Relevance of the response to real-world scenarios and practical applications.
+

@@ -8,3 +8,12 @@ language:
 rmd_files:
   - index.Rmd
   - 01-intro.Rmd
+  - 02-health-effects-and-regs.Rmd
+  - 03-physics-of-pollutants.Rmd
+  - 04-urban-airflow.Rmd
+  # - 05-transport.Rmd
+  # - 07-ventilation.Rmd
+  # - 06-sensors.Rmd
+  # - 07-infection-models.Rmd
+  # - 08-mitigation.Rmd
+  # - 09-waste.Rmd
